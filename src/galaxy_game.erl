@@ -124,16 +124,16 @@ planet_loop() ->
         shields_up ->
             process_flag(trap_exit, true),
             planet_loop();
-        {'EXIT', _From, Reason} ->
+        {'EXIT', _From, laser} ->
             process_flag(trap_exit, false),
-            io:format("Result: Is attacked by ~p, shields down~n", [Reason]),
+            io:format("Result: Is attacked by ~p, shields down~n", [laser]),
             planet_loop();
         {create_alliance, Ally} ->
             link(find_planet(Ally)),
             io:format("alliance created~n"),
             planet_loop();
         teardown ->   
-            exit(teardown),
+            exit(kill),
             ok;
         _ -> 
             planet_loop()
