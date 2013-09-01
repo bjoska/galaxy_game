@@ -1,3 +1,8 @@
+I'm still having issues with the registering of processes in the tests failing, 
+while running it in the Shell works just fine.
+
+---------------------------------------------------------------------------------
+
 The Erlang Galaxy is under attack!! It is key for the future of the language
 to keep the planets safe. In order to maximize their chances, you have been
 assigned to provide a simulator that can help the Erlang Army understand how
