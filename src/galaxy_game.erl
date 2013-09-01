@@ -133,7 +133,6 @@ planet_loop() ->
             io:format("alliance created~n"),
             planet_loop();
         teardown ->   
-            exit(kill),
             ok;
         _ -> 
             planet_loop()
