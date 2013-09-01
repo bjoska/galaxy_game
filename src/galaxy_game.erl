@@ -68,32 +68,60 @@ simulate_attack(Planets, Actions) ->
 %% @doc Code implemented by challenger.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% @doc The evil attacks on our precious planets
+%% Pattern matching to catch the performed attacks on our Planets.
+%% This will only match on nuclear or laser. These are only used when
+%% simulating an attack.
+-spec attack_planet({atom(), planet()}) -> atom().
+%% @end
 attack_planet({nuclear, Planet}) ->
     io:format("Enemy Action: The bugs shoot a nuclear cannon at ~p~n", 
               [Planet]),
     exit(find_planet(Planet), kill),
-    io:format("Result: ~p is destroyed~n", [Planet]);
+    io:format("Result: ~p is destroyed~n", [Planet]),
+    boom;
 attack_planet({laser, Planet}) ->
     io:format("Enemy Action: The bugs shoot a laser cannon at ~p~n", 
               [Planet]),
-    exit(find_planet(Planet), laser).
+    exit(find_planet(Planet), laser),
+    boom.
 
+%% @doc Create a planet(are we playing god?)
+%% Creates a new process and then registers the same in the registry.
+-spec spawn_planet(planet()) -> atom().
+%% @end
 spawn_planet(Planet) ->
     Pid = spawn(fun() -> planet_loop() end),
-    erlang:register(Planet, Pid).
+    erlang:register(Planet, Pid),
+    ok.
 
+%% @doc Turn on a planets shields
+%% Passes the message to the Planet to turn on its shields.
+-spec setup_shields(planet()) -> atom().
+%% @end
 setup_shields(Planet) ->
     Pid = find_planet(Planet),
-    Pid ! shield_up.
+    Pid ! shields_up,
+    ok.
 
+%% @doc Associates planets with eachother
+%% Simple function to take one pid() and associate it with self().
+-spec setup_alliances(alliance()) -> atom().
+%% @end
 setup_alliances(Alliance) ->
     Planet1 = element(1, Alliance),
     Pid = find_planet(Planet1),
-    Pid ! {create_alliance, element(2, Alliance)}.
+    Pid ! {create_alliance, element(2, Alliance)},
+    ok.
 
+%% @doc Handling of messages
+%% This loop is used to keep the processes alive and handle any incoming
+%% of a specific kind.
+-spec planet_loop() -> function() | atom().
+%% @end
 planet_loop() ->
     receive
-        shield_up ->
+        shields_up ->
             process_flag(trap_exit, true),
             planet_loop();
         {'EXIT', _From, Reason} ->
@@ -105,14 +133,24 @@ planet_loop() ->
             io:format("alliance created~n"),
             planet_loop();
         teardown ->   
-            exit(teardown);
+            exit(teardown),
+            ok;
         _ -> 
             planet_loop()
     end.
 
+%% @doc Locates a process by registered name
+%% Only here to improve readability.
+-spec find_planet(planet()) -> pid().
+%% @end
 find_planet(PlanetName) ->
     whereis(PlanetName).
 
+%% @doc Will teardown the universe(Also known as the destroyer of worlds!)
+%% By killing all the remaining processes, this will teardown the system
+%% enabling the possibility to rerun with a different setup.
+-spec teardown_planet(atom()) -> ok.
+%% @end
 teardown_planet(undefined) ->
     ok;
 teardown_planet(PlanetId) ->
