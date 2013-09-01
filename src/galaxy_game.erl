@@ -149,9 +149,10 @@ find_planet(PlanetName) ->
 %% @doc Will teardown the universe(Also known as the destroyer of worlds!)
 %% By killing all the remaining processes, this will teardown the system
 %% enabling the possibility to rerun with a different setup.
--spec teardown_planet(atom()) -> ok.
+-spec teardown_planet(atom()) -> atom().
 %% @end
 teardown_planet(undefined) ->
     ok;
 teardown_planet(PlanetId) ->
-    PlanetId ! teardown.
+    PlanetId ! teardown,
+    ok.
