@@ -36,7 +36,11 @@
 -spec setup_universe([planet()], [shield()], [alliance()]) -> ok.
 %% @end
 setup_universe(Planets, Shields, Alliances) ->
-    unimplemented.
+    io:format("Initial Galaxy: ~p planets~n", [length(Planets)]),
+    [spawn_planet(Planet) || Planet <- Planets],
+    [setup_shields(Shield) || Shield <- Shields],
+    [setup_alliances(Alliance) || Alliance <- Alliances],
+    ok.
 
 %% @doc Clean up a universe simulation.
 %% This function will only be called after calling setup_universe/3 with the
@@ -45,8 +49,9 @@ setup_universe(Planets, Shields, Alliances) ->
 %% should be gone.
 -spec teardown_universe([planet()]) -> ok.
 %% @end
-teardown_universe(Planets) ->
-    unimplemented.
+teardown_universe(Planets) ->    
+    [teardown_planet(find_planet(Planet)) || Planet <- Planets],
+    ok.
 
 %% @doc Simulate an attack.
 %% This function will only be called after setting up a universe with the same
@@ -55,5 +60,60 @@ teardown_universe(Planets) ->
 -spec simulate_attack([planet()], [attack()]) -> Survivors::[planet()].
 %% @end
 simulate_attack(Planets, Actions) ->
-    unimplemented.
+    [attack_planet(Attack) || Attack <- Actions],
+    timer:sleep(50),
+    [Planet || Planet <- Planets, find_planet(Planet) =/= undefined].
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% @doc Code implemented by challenger.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+attack_planet({nuclear, Planet}) ->
+    io:format("Enemy Action: The bugs shoot a nuclear cannon at ~p~n", 
+              [Planet]),
+    exit(find_planet(Planet), kill),
+    io:format("Result: ~p is destroyed~n", [Planet]);
+attack_planet({laser, Planet}) ->
+    io:format("Enemy Action: The bugs shoot a laser cannon at ~p~n", 
+              [Planet]),
+    exit(find_planet(Planet), laser).
+
+spawn_planet(Planet) ->
+    Pid = spawn(fun() -> planet_loop() end),
+    erlang:register(Planet, Pid).
+
+setup_shields(Planet) ->
+    Pid = find_planet(Planet),
+    Pid ! shield_up.
+
+setup_alliances(Alliance) ->
+    Planet1 = element(1, Alliance),
+    Pid = find_planet(Planet1),
+    Pid ! {create_alliance, element(2, Alliance)}.
+
+planet_loop() ->
+    receive
+        shield_up ->
+            process_flag(trap_exit, true),
+            planet_loop();
+        {'EXIT', _From, Reason} ->
+            process_flag(trap_exit, false),
+            io:format("Result: Is attacked by ~p, shields down~n", [Reason]),
+            planet_loop();
+        {create_alliance, Ally} ->
+            link(find_planet(Ally)),
+            io:format("alliance created~n"),
+            planet_loop();
+        teardown ->   
+            exit(teardown);
+        _ -> 
+            planet_loop()
+    end.
+
+find_planet(PlanetName) ->
+    whereis(PlanetName).
+
+teardown_planet(undefined) ->
+    ok;
+teardown_planet(PlanetId) ->
+    PlanetId ! teardown.
